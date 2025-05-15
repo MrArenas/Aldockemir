@@ -1,0 +1,26 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: read
+      packeages: write
+
+    steps:
+      -use: actions/checkout@v3
+      -name: login to GHCR
+        run : echo "${{secrets.GH_TOKEN}}" | docker login ghcr.io -u "${{secrets.QUERIDODIARIO}}" --password-stdin
+
+      -name: build and push image
+        run: |
+          docker build -t ghcr.io/${{secrets.QUERIDODIARIO}}/fastapi-app:latest .
+          docker push ghcr.io/${{secrets.QUERIDODIARIO}}/fastapi-app:latest
+
+
+
+      

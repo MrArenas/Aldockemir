@@ -1,26 +1,42 @@
-name: build
+name: Build and Push Docker Image
 
 on:
   push:
     branches: [main]
+
 jobs:
   build:
     runs-on: ubuntu-latest
-    
+
     permissions:
       contents: read
-      packeages: write
+      packages: write
 
     steps:
-      -use: actions/checkout@v3
-      -name: login to GHCR
-        run : echo "${{secrets.GH_TOKEN}}" | docker login ghcr.io -u "${{secrets.QUERIDODIARIO}}" --password-stdin
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-      -name: build and push image
+      - name: Login to GHCR
+        run: echo "${{secrets.GH_TOKEN}}" | docker login ghcr.io -u "${{secrets.QUERIDODIARIO}}" --password-stdin
+
+      - name: Build and push image
         run: |
           docker build -t ghcr.io/${{secrets.QUERIDODIARIO}}/fastapi-app:latest .
           docker push ghcr.io/${{secrets.QUERIDODIARIO}}/fastapi-app:latest
 
-
-
-      
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: ssh into ec2 and deploy container
+        uses: appleboy/ssh-action@v0.1.0
+        with:
+          host: ${{ secrets.EC2_IP }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.AWS_ACCESS_PEM }}
+          script: |
+            echo "${{secrets.GH_TOKEN}}" | docker login ghcr.io -u "${{secrets.QUERIDODIARIO}}" --password-stdin         
+            docker pull ghcr.io/${{secrets.QUERIDODIARIO}}/fastapi-app:latest
+            docker stop fastapi-app || true
+            docker rm fastapi-app || true
+            docker run -d --name fastapi-app -p 80:80 ghcr.io/${{secrets.QUERIDODIARIO}}/fastapi-app:latest

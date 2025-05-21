@@ -39,4 +39,4 @@ jobs:
             docker pull ghcr.io/${{secrets.QUERIDODIARIO}}/fastapi-app:latest
             docker stop fastapi-app || true
             docker rm fastapi-app || true
-            docker run -d --name fastapi-app -p 80:80 ghcr.io/${{secrets.QUERIDODIARIO}}/fastapi-app:latest
+            docker run -d -p 8000:8000 --name fastapi-app ghcr.io/${{secrets.QUERIDODIARIO}}/fastapi-app:latest
